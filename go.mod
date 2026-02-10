@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.5
 )
 
 require (
