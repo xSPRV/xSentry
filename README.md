@@ -4,7 +4,7 @@ xSentry is a powerful, cross-platform secret scanning tool designed to prevent s
 tokens) from leaking into your source code. It can run as a local pre-commit hook to block secrets before they are
 committed, or as a CI/CD step to scan your entire repository history.
 
-## 🚀 Features
+## Features
 
 * **Smart Detection:** Uses a hybrid engine combining Regular Expressions and Shannon Entropy to find both known
   patterns (like AWS keys) and unknown, random secrets.
@@ -16,7 +16,7 @@ committed, or as a CI/CD step to scan your entire repository history.
 
 ---
 
-## 📦 Installation
+## Installation
 
 xSentry can be installed via pre-compiled binary, Docker, or by building from source.
 
@@ -24,7 +24,7 @@ xSentry can be installed via pre-compiled binary, Docker, or by building from so
 
 Perfect for Python, C#, or Node.js developers who don't have Go installed.
 
-1.  Go to the [Releases page](https://github.com/dokuqui/xSentry/releases).
+1.  Go to the Releases page.
 2.  Download the archive for your OS (Windows, macOS, or Linux).
 3.  Extract the `xSentry` (or `xSentry.exe`) binary to your project root.
 
@@ -33,8 +33,8 @@ Perfect for Python, C#, or Node.js developers who don't have Go installed.
 Use the official Docker image to run xSentry in any CI pipeline without installing dependencies.
 
 ```bash
-docker pull ghcr.io/dokuqui/xsentry:latest
-docker run -v $(pwd):/src ghcr.io/dokuqui/xsentry -path=/src --scan-history
+docker pull ghcr.io/xSPRV/xsentry:latest
+docker run -v $(pwd):/src ghcr.io/xSPRV/xsentry -path=/src --scan-history
 ```
 
 ### Option 3: Build from Source (For Go Developers)
@@ -42,14 +42,14 @@ docker run -v $(pwd):/src ghcr.io/dokuqui/xsentry -path=/src --scan-history
 If you have Go 1.21+ installed:
 
 ```bash
-git clone [https://github.com/dokuqui/xSentry.git](https://github.com/dokuqui/xSentry.git)
+git clone [https://github.com/xSPRV/xSentry.git](https://github.com/xSPRV/xSentry.git)
 cd xSentry
 go build -o xSentry ./cmd/xSentry
 ```
 
 ---
 
-## 🛠️ Usage
+## Usage
 
 ### Basic Scans
 
@@ -140,7 +140,7 @@ jobs:
   xSentry:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/dokuqui/xsentry:latest
+      image: ghcr.io/xSPRV/xsentry:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -164,7 +164,7 @@ stages:
 
 secret_scan:
   stage: security
-  image: ghcr.io/dokuqui/xsentry:latest
+  image: ghcr.io/xSPRV/xsentry:latest
   script:
     - xSentry -path="." --scan-history
   allow_failure: false
@@ -184,7 +184,7 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        $url = "https://github.com/dokuqui/xSentry/releases/latest/download/xSentry_Windows_x86_64.tar.gz"
+        $url = "https://github.com/xSPRV/xSentry/releases/latest/download/xSentry_Windows_x86_64.tar.gz"
         Invoke-WebRequest -Uri $url -OutFile "xSentry.tar.gz"
 
         tar -xvf xSentry.tar.gz

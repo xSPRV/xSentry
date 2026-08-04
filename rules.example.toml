@@ -3,7 +3,7 @@
 ###################################################
 [[rules]]
 name = "AWS Access Key ID"
-regex = '''AKIA[0-9A-Z]{16}'''
+regex = '''(?i)AKIA[0-9A-Z]{16}'''
 keywords = ["AKIA"]
 
 [[rules]]
@@ -21,7 +21,7 @@ keywords = ["session token"]
 ###################################################
 [[rules]]
 name = "GCP API Key"
-regex = '''AIza[0-9A-Za-z\-_]{35}'''
+regex = '''(?i)AIza[0-9A-Za-z\-_]{35}'''
 keywords = ["AIza"]
 
 [[rules]]
@@ -31,7 +31,7 @@ keywords = ["client_secret"]
 
 [[rules]]
 name = "Google Service Account Key File"
-regex = '''"type":\s*"service_account"'''
+regex = '''(?i)"type":\s*"service_account"'''
 keywords = ["service_account"]
 
 ###################################################
@@ -44,7 +44,7 @@ keywords = ["azure"]
 
 [[rules]]
 name = "Azure Connection String"
-regex = '''(DefaultEndpointsProtocol|AccountName|AccountKey|BlobEndpoint)=.{10,}'''
+regex = '''(?i)(DefaultEndpointsProtocol|AccountName|AccountKey|BlobEndpoint)=.{10,}'''
 keywords = ["AccountKey"]
 
 ###################################################
@@ -52,22 +52,22 @@ keywords = ["AccountKey"]
 ###################################################
 [[rules]]
 name = "GitHub PAT"
-regex = '''ghp_[A-Za-z0-9]{36}'''
+regex = '''(?i)ghp_[A-Za-z0-9]{36}'''
 keywords = ["ghp_"]
 
 [[rules]]
 name = "GitHub OAuth"
-regex = '''gho_[A-Za-z0-9]{36}'''
+regex = '''(?i)gho_[A-Za-z0-9]{36}'''
 keywords = ["gho_"]
 
 [[rules]]
 name = "GitHub Refresh Token"
-regex = '''ghr_[A-Za-z0-9]{36}'''
+regex = '''(?i)ghr_[A-Za-z0-9]{36}'''
 keywords = ["ghr_"]
 
 [[rules]]
 name = "GitLab Personal Access Token"
-regex = '''glpat-[A-Za-z0-9\-_]{20,}'''
+regex = '''(?i)glpat-[A-Za-z0-9\-_]{20,}'''
 keywords = ["glpat"]
 
 [[rules]]
@@ -80,22 +80,22 @@ keywords = ["bitbucket"]
 ###################################################
 [[rules]]
 name = "OAuth Access Token"
-regex = '''ya29\.[0-9A-Za-z\-_]{30,}'''
+regex = '''(?i)ya29\.[0-9A-Za-z\-_]{30,}'''
 keywords = ["ya29"]
 
 [[rules]]
 name = "Microsoft Graph Token"
-regex = '''Ew[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+'''
+regex = '''(?i)\bEw[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+'''
 keywords = ["microsoft"]
 
 [[rules]]
 name = "Slack Token"
-regex = '''xox[baprs]-[A-Za-z0-9\-]{10,50}'''
+regex = '''(?i)xox[baprs]-[A-Za-z0-9\-]{10,50}'''
 keywords = ["xox"]
 
 [[rules]]
 name = "Discord Bot Token"
-regex = '''[A-Za-z0-9]{24}\.[A-Za-z0-9_\-]{6}\.[A-Za-z0-9_\-]{27}'''
+regex = '''(?i)[A-Za-z0-9]{24}\.[A-Za-z0-9_\-]{6}\.[A-Za-z0-9_\-]{27}'''
 keywords = ["discord"]
 
 ###################################################
@@ -103,17 +103,17 @@ keywords = ["discord"]
 ###################################################
 [[rules]]
 name = "Stripe Secret Key"
-regex = '''sk_(live|test)_[A-Za-z0-9]{24}'''
+regex = '''(?i)sk_(live|test)_[A-Za-z0-9]{24}'''
 keywords = ["sk_live", "sk_test"]
 
 [[rules]]
 name = "Stripe Restricted Key"
-regex = '''rk_(live|test)_[A-Za-z0-9]{24}'''
+regex = '''(?i)rk_(live|test)_[A-Za-z0-9]{24}'''
 keywords = ["rk_live"]
 
 [[rules]]
 name = "PayPal Client Secret"
-regex = '''[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}'''
+regex = '''(?i)[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}'''
 keywords = ["paypal"]
 
 ###################################################
@@ -121,22 +121,22 @@ keywords = ["paypal"]
 ###################################################
 [[rules]]
 name = "PostgreSQL Connection String"
-regex = '''postgres:\/\/[^:\s]+:[^@\s]+@[^:\s]+:[0-9]+\/[A-Za-z0-9_-]+'''
+regex = '''(?i)postgres:\/\/[^:\s]+:[^@\s]+@[^:\s]+:[0-9]+\/[A-Za-z0-9_-]+'''
 keywords = ["postgres://"]
 
 [[rules]]
 name = "MySQL Connection String"
-regex = '''mysql:\/\/[^:\s]+:[^@\s]+@[^:\s]+\/[A-Za-z0-9_-]+'''
+regex = '''(?i)mysql:\/\/[^:\s]+:[^@\s]+@[^:\s]+\/[A-Za-z0-9_-]+'''
 keywords = ["mysql://"]
 
 [[rules]]
 name = "MongoDB Connection String"
-regex = '''mongodb(\+srv)?:\/\/[^:\s]+:[^@\s]+@[^\/]+\/[^\s]+'''
+regex = '''(?i)mongodb(\+srv)?:\/\/[^:\s]+:[^@\s]+@[^\/]+\/[^\s]+'''
 keywords = ["mongodb"]
 
 [[rules]]
 name = "Redis Connection String"
-regex = '''redis:\/\/[^:\s]+:[^@\s]+@[^:\s]+:[0-9]+'''
+regex = '''(?i)redis:\/\/[^:\s]+:[^@\s]+@[^:\s]+:[0-9]+'''
 keywords = ["redis://"]
 
 ###################################################
@@ -144,22 +144,22 @@ keywords = ["redis://"]
 ###################################################
 [[rules]]
 name = "RSA Private Key"
-regex = '''-----BEGIN RSA PRIVATE KEY-----'''
+regex = '''(?i)-----BEGIN RSA PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
 
 [[rules]]
 name = "OpenSSH Private Key"
-regex = '''-----BEGIN OPENSSH PRIVATE KEY-----'''
+regex = '''(?i)-----BEGIN OPENSSH PRIVATE KEY-----'''
 keywords = ["OPENSSH"]
 
 [[rules]]
 name = "DSA Private Key"
-regex = '''-----BEGIN DSA PRIVATE KEY-----'''
+regex = '''(?i)-----BEGIN DSA PRIVATE KEY-----'''
 keywords = ["DSA"]
 
 [[rules]]
 name = "EC Private Key"
-regex = '''-----BEGIN EC PRIVATE KEY-----'''
+regex = '''(?i)-----BEGIN EC PRIVATE KEY-----'''
 keywords = ["EC PRIVATE KEY"]
 
 ###################################################
@@ -178,7 +178,7 @@ entropy = 3.5
 
 [[rules]]
 name = "JWT Token"
-regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}\.[A-Za-z0-9._-]{10,}'''
+regex = '''(?i)eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}\.[A-Za-z0-9._-]{10,}'''
 keywords = ["jwt"]
 
 ###################################################
@@ -186,7 +186,7 @@ keywords = ["jwt"]
 ###################################################
 [[rules]]
 name = "Hardcoded Password"
-regex = '''(?i)(password|passwd|pwd)["']?\s*[:=]\s*["']?[^\s"']{6,100}["']?'''
+regex = '''(?i)(password|passwd|pwd)["']?\s*[:=]\s*["']?[^$"'{\s\[(d][^(\n]{5,100}["']?'''
 keywords = ["password"]
 
 [[rules]]
@@ -199,12 +199,13 @@ keywords = ["password"]
 ###################################################
 [[rules]]
 name = "Base64-Encoded 32-byte Key"
-regex = '''\b[A-Za-z0-9+/]{43}=?\b'''
+regex = '''(?i)\b[A-Za-z0-9+/]{43}=?\b'''
 keywords = ["key"]
+entropy = 4.0
 
 [[rules]]
 name = "PKCS8 Private Key"
-regex = '''-----BEGIN PRIVATE KEY-----'''
+regex = '''(?i)-----BEGIN PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
 
 ###################################################
@@ -222,15 +223,15 @@ keywords = ["secret"]
 
 [[rules]]
 name = "Hardcoded GitHub Action Value"
-regex = '''(?i)(password|token|secret|key)\s*:\s*["']?[^$"'{\s].{8,}'''
-keywords = ["password", "token", "secret", "key"]
+regex = '''(?i)(password|token|secret)\s*:\s*["']?[^$"'{\s].{8,}'''
+keywords = ["password", "token", "secret"]
 
 ###################################################
 # High Entropy Secrets (catch unknown patterns)
 ###################################################
 [[rules]]
 name = "High Entropy String"
-regex = '''\b[A-Za-z0-9+/]{50,}\b'''
+regex = '''(?i)\b[A-Za-z0-9+/]{50,}\b'''
 keywords = ["entropy"]
 
 entropy = 4.0
