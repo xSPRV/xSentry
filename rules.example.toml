@@ -8,7 +8,7 @@ keywords = ["AKIA"]
 
 [[rules]]
 name = "AWS Secret Access Key"
-regex = '''(?i)aws(.{0,20})?(secret|access)?.{0,20}key(.{0,20})?[A-Za-z0-9/+=]{40}'''
+regex = '''(?i)aws.{0,20}(secret|access)?.{0,20}key["']?\s*[:=]\s*["']?[A-Za-z0-9/+=]{40}'''
 keywords = ["aws", "secret"]
 
 [[rules]]
