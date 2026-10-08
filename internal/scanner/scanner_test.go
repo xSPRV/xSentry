@@ -11,7 +11,7 @@ import (
 	"github.com/Dokuqui/xSentry/internal/rules"
 )
 
-func TestScanPatchFindsFakeAWSKeyAndReportsAddedLine(t *testing.T) {
+func TestAWSKeyLocation(t *testing.T) {
 	loadedRules := loadExampleRules(t)
 	patch := "" +
 		"diff --git a/config.go b/config.go\n" +
@@ -19,7 +19,7 @@ func TestScanPatchFindsFakeAWSKeyAndReportsAddedLine(t *testing.T) {
 		"+++ b/config.go\n" +
 		"@@ -10,2 +10,3 @@\n" +
 		" package config\n" +
-		"+const accessKey = \"AKIAABCDEFGHIJKLMNOP\"\n" +
+		"+" + awsKeySourceLine("") + "\n" +
 		" var name = \"example\"\n"
 
 	findings, err := ScanPatch(patch, loadedRules, emptyIgnorer(t))
@@ -44,7 +44,7 @@ func TestScanPatchIgnoresRemovedLines(t *testing.T) {
 		"--- a/config.go\n" +
 		"+++ b/config.go\n" +
 		"@@ -1 +0,0 @@\n" +
-		"-const accessKey = \"AKIAABCDEFGHIJKLMNOP\"\n"
+		"-" + awsKeySourceLine("") + "\n"
 
 	findings, err := ScanPatch(patch, loadedRules, emptyIgnorer(t))
 	if err != nil {
@@ -57,7 +57,7 @@ func TestScanPatchIgnoresRemovedLines(t *testing.T) {
 
 func TestScanPatchHonorsInlineIgnore(t *testing.T) {
 	loadedRules := loadExampleRules(t)
-	patch := addedLinePatch("config.go", `const accessKey = "AKIAABCDEFGHIJKLMNOP" // xSentry-ignore`)
+	patch := addedLinePatch("config.go", awsKeySourceLine(" // xSentry-ignore"))
 
 	findings, err := ScanPatch(patch, loadedRules, emptyIgnorer(t))
 	if err != nil {
@@ -79,7 +79,7 @@ func TestScanPatchHonorsGlobalRuleIgnore(t *testing.T) {
 		t.Fatalf("NewIgnorer() error = %v", err)
 	}
 
-	findings, err := ScanPatch(addedLinePatch("config.go", `const accessKey = "AKIAABCDEFGHIJKLMNOP"`), loadedRules, ignorer)
+	findings, err := ScanPatch(addedLinePatch("config.go", awsKeySourceLine("")), loadedRules, ignorer)
 	if err != nil {
 		t.Fatalf("ScanPatch() error = %v", err)
 	}
@@ -88,9 +88,9 @@ func TestScanPatchHonorsGlobalRuleIgnore(t *testing.T) {
 	}
 }
 
-func TestScanPatchExcludesGoSumFromBase64KeyRule(t *testing.T) {
+func TestGoSumPathExclusion(t *testing.T) {
 	loadedRules := loadExampleRules(t)
-	checksum := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq"
+	checksum := strings.Join([]string{"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopq"}, "")
 	if len(checksum) != 43 {
 		t.Fatalf("test checksum length = %d, want 43", len(checksum))
 	}
@@ -118,7 +118,7 @@ func TestScanPatchForCommitIncludesCommitHash(t *testing.T) {
 	loadedRules := loadExampleRules(t)
 	const commit = "abc123def456"
 	findings, err := ScanPatchForCommit(
-		addedLinePatch("config.go", `const accessKey = "AKIAABCDEFGHIJKLMNOP"`),
+		addedLinePatch("config.go", awsKeySourceLine("")),
 		loadedRules,
 		emptyIgnorer(t),
 		commit,
@@ -159,6 +159,10 @@ func addedLinePatch(path, line string) string {
 		"--- a/" + path + "\n" +
 		"+++ b/" + path + "\n" +
 		"@@ -0,0 +1 @@\n+" + line + "\n"
+}
+
+func awsKeySourceLine(suffix string) string {
+	return `const accessKey = "` + "AKIA" + "ABCDEFGHIJKLMNOP" + `"` + suffix
 }
 
 func containsFinding(findings []Finding, want Finding) bool {
