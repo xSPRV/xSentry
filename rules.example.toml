@@ -146,21 +146,25 @@ keywords = ["redis://"]
 name = "RSA Private Key"
 regex = '''(?i)-----BEGIN RSA PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
+exclude_paths = ['(^|/)rules\.example\.toml$']
 
 [[rules]]
 name = "OpenSSH Private Key"
 regex = '''(?i)-----BEGIN OPENSSH PRIVATE KEY-----'''
 keywords = ["OPENSSH"]
+exclude_paths = ['(^|/)rules\.example\.toml$']
 
 [[rules]]
 name = "DSA Private Key"
 regex = '''(?i)-----BEGIN DSA PRIVATE KEY-----'''
 keywords = ["DSA"]
+exclude_paths = ['(^|/)rules\.example\.toml$']
 
 [[rules]]
 name = "EC Private Key"
 regex = '''(?i)-----BEGIN EC PRIVATE KEY-----'''
 keywords = ["EC PRIVATE KEY"]
+exclude_paths = ['(^|/)rules\.example\.toml$']
 
 ###################################################
 # Generic Tokens & Secrets
@@ -203,11 +207,13 @@ name = "Base64-Encoded 32-byte Key"
 regex = '''(?i)\b[A-Za-z0-9+/]{43}=?\b'''
 keywords = ["key"]
 entropy = 4.0
+exclude_paths = ['(^|/)go\.sum$']
 
 [[rules]]
 name = "PKCS8 Private Key"
 regex = '''(?i)-----BEGIN PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
+exclude_paths = ['(^|/)rules\.example\.toml$']
 
 ###################################################
 # Terraform / Kubernetes / CI/CD Secrets

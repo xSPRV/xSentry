@@ -59,6 +59,9 @@ func ScanPatchForCommit(patchString string, loadedRules []rules.Rule, ign *ignor
 				if ignoredLine {
 					break
 				}
+				if rule.ExcludesPath(currentFile) {
+					continue
+				}
 				if ign.IsRuleIgnored(rule.Name) {
 					continue
 				}
