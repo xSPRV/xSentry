@@ -65,6 +65,9 @@ func ScanPatchForCommit(patchString string, loadedRules []rules.Rule, ign *ignor
 				if ign.IsRuleIgnored(rule.Name) {
 					continue
 				}
+				if ign.IsFindingIgnored(rule.Name, currentFile, currentLineNumber, commit) {
+					continue
+				}
 
 				matches := rule.CompiledRegex.FindAllStringSubmatch(scanLine, -1)
 				if len(matches) == 0 {
