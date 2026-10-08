@@ -92,6 +92,8 @@ cat config.yaml | ./xSentry
 ### Rules (rules.example.toml)
 
 xSentry uses a TOML file to define detection rules. You can define simple regex rules or hybrid "Regex + Entropy" rules.
+Rules can also exclude file paths from that specific detector with `exclude_paths`. Each entry is a regular expression
+matched against the repository-relative path, with path separators normalized to `/`.
 
 ```toml
 # Simple Regex Rule
@@ -106,6 +108,7 @@ regex = 'AKIA[0-9A-Z]{16}'
 name = "Generic API Key"
 regex = 'key = "[A-Za-z0-9]{20,}"'
 entropy = 4.5 # Only flag if entropy is > 4.5
+exclude_paths = ['(^|/)go\.sum$'] # Do not treat Go module checksums as secrets
 ```
 
 ### Ignoring Secrets
