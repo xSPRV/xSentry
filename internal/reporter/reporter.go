@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Dokuqui/xSentry/internal/scanner"
 )
@@ -14,7 +16,7 @@ func ReportFindings(findings []scanner.Finding, reportUrl string) error {
 	printToConsole(findings)
 
 	if reportUrl != "" && len(findings) > 0 {
-		fmt.Fprintf(os.Stderr, "✅ [xSentry] Sending report to %s\n", reportUrl)
+		slog.Info("sending findings report")
 		if err := sendToURL(findings, reportUrl); err != nil {
 			return fmt.Errorf("failed to send JSON report: %w", err)
 		}
@@ -27,14 +29,18 @@ func printToConsole(findings []scanner.Finding) {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "\n--- SECRETS FOUND ---\n")
+	fmt.Fprintln(os.Stderr, "\n--- SECRETS FOUND ---")
 	for _, f := range findings {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] Secret found:\n")
+		fmt.Fprintln(os.Stderr, "Finding:")
 		fmt.Fprintf(os.Stderr, "    File:   %s\n", f.File)
 		fmt.Fprintf(os.Stderr, "    Line:   %d\n", f.Line)
-		fmt.Fprintf(os.Stderr, "    Rule:   %s\n\n", f.Details)
+		fmt.Fprintf(os.Stderr, "    Rule:   %s\n", f.Details)
+		if f.Commit != "" {
+			fmt.Fprintf(os.Stderr, "    Commit: %s\n", f.Commit)
+		}
+		fmt.Fprintln(os.Stderr)
 	}
-	fmt.Fprintf(os.Stderr, "---------------------\n")
+	fmt.Fprintln(os.Stderr, "---------------------")
 }
 
 func sendToURL(findings []scanner.Finding, url string) error {
@@ -57,7 +63,7 @@ func sendToURL(findings []scanner.Finding, url string) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)

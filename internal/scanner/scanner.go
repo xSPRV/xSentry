@@ -13,16 +13,22 @@ import (
 
 const ignoreComment = "xSentry-ignore"
 
-var hunkHeaderRegex = regexp.MustCompile(`^@@ \-\d+,\d+ \+(\d+),(\d+) @@`)
+var hunkHeaderRegex = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
 
 type Finding struct {
 	File    string `json:"file"`
 	Line    int    `json:"line"`
 	Details string `json:"details"`
+	Commit  string `json:"commit,omitempty"`
 }
 
 func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer) ([]Finding, error) {
+	return ScanPatchForCommit(patchString, loadedRules, ign, "")
+}
+
+func ScanPatchForCommit(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer, commit string) ([]Finding, error) {
 	scanner := bufio.NewScanner(strings.NewReader(patchString))
+	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 
 	var currentFile string
 	var currentLineNumber int
@@ -30,10 +36,6 @@ func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		if strings.Contains(line, ignoreComment) {
-			continue
-		}
 
 		if strings.HasPrefix(line, "+++ b/") {
 			currentFile = strings.TrimPrefix(line, "+++ b/")
@@ -51,8 +53,12 @@ func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer
 
 		if strings.HasPrefix(line, "+") && currentFile != "" {
 			scanLine := strings.TrimPrefix(line, "+")
+			ignoredLine := strings.Contains(scanLine, ignoreComment)
 
 			for _, rule := range loadedRules {
+				if ignoredLine {
+					break
+				}
 				if ign.IsRuleIgnored(rule.Name) {
 					continue
 				}
@@ -64,10 +70,7 @@ func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer
 
 				if rule.Entropy > 0 {
 					for _, match := range matches {
-						candidate := match[0]
-						if len(match) > 1 {
-							candidate = match[1]
-						}
+						candidate := match[rule.SecretGroup]
 
 						entropy := calculateShannonEntropy(candidate)
 						if entropy > rule.Entropy {
@@ -75,6 +78,7 @@ func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer
 								File:    currentFile,
 								Line:    currentLineNumber,
 								Details: fmt.Sprintf("%s (Entropy: %.2f)", rule.Name, entropy),
+								Commit:  commit,
 							})
 						}
 					}
@@ -83,6 +87,7 @@ func ScanPatch(patchString string, loadedRules []rules.Rule, ign *ignore.Ignorer
 						File:    currentFile,
 						Line:    currentLineNumber,
 						Details: rule.Name,
+						Commit:  commit,
 					})
 				}
 			}

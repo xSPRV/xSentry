@@ -175,6 +175,7 @@ name = "Generic API Key"
 regex = '''(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token)\s*[:=]\s*["']?([A-Za-z0-9_\-]{16,})["']?'''
 keywords = ["key", "api", "token", "secret"]
 entropy = 3.5
+secret_group = 2
 
 [[rules]]
 name = "JWT Token"

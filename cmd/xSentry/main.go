@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/Dokuqui/xSentry/internal/git"
@@ -17,6 +17,8 @@ const defaultRulesFile = "rules.example.toml"
 const defaultIgnoreFile = ".xSentry-ignore"
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+
 	rulesPath := flag.String("rules", defaultRulesFile, "Path to the rules file")
 	ignorePath := flag.String("ignore", defaultIgnoreFile, "Path to the ignore file")
 	repoPath := flag.String("path", "", "Path to a Git repository to scan")
@@ -29,27 +31,27 @@ func main() {
 	if *installHook {
 		err := installPreCommitHook()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "🚨 [xSentry] Failed to install hook: %v\n", err)
+			slog.Error("failed to install pre-commit hook", "error", err)
 			os.Exit(1)
 		}
-		fmt.Println("✅ [xSentry] Pre-commit hook installed successfully.")
+		slog.Info("pre-commit hook installed successfully")
 		os.Exit(0)
 	}
 
 	loadedRules, err := rules.LoadRules(*rulesPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error loading rules file '%s': %v\n", *rulesPath, err)
+		slog.Error("failed to load rules file", "path", *rulesPath, "error", err)
 		os.Exit(2)
 	}
 	if len(loadedRules) == 0 {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] No rules loaded. Exiting.\n")
+		slog.Error("no valid rules loaded")
 		os.Exit(2)
 	}
-	fmt.Fprintf(os.Stderr, "✅ [xSentry] Successfully loaded %d rules.\n", len(loadedRules))
+	slog.Info("rules loaded", "count", len(loadedRules), "path", *rulesPath)
 
 	ign, err := ignore.NewIgnorer(*ignorePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error loading ignore file '%s': %v\n", *ignorePath, err)
+		slog.Error("failed to load ignore file", "path", *ignorePath, "error", err)
 		os.Exit(2)
 	}
 
@@ -57,10 +59,10 @@ func main() {
 	var scanErr error
 
 	if *scanStaged {
-		fmt.Fprintf(os.Stderr, "✅ [xSentry] Running in pre-commit hook mode...\n")
+		slog.Info("scanning staged changes")
 		patchString, err := git.GetStagedPatch()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error getting staged files: %v\n", err)
+			slog.Error("failed to get staged changes", "error", err)
 			os.Exit(2)
 		}
 		if patchString != "" {
@@ -72,31 +74,31 @@ func main() {
 		}
 
 	} else if *repoPath != "" {
-		fmt.Fprintf(os.Stderr, "✅ [xSentry] Running in Git-aware mode on path: %s\n", *repoPath)
+		slog.Info("opening Git repository", "path", *repoPath)
 		repo, err := git.OpenRepository(*repoPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "🚨 [xSentry] %v\n", err)
+			slog.Error("failed to open Git repository", "error", err)
 			os.Exit(2)
 		}
 
 		if *scanHistory {
-			fmt.Fprintf(os.Stderr, "✅ [xSentry] Starting full history scan...\n\n")
-			patchChannel, err := git.GetCommitPatches(repo)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error getting commit history: %v\n", err)
-				os.Exit(2)
-			}
-			for patchString := range patchChannel {
-				findings, err := scanner.ScanPatch(patchString, loadedRules, ign)
+			slog.Info("scanning commit history")
+			err := git.ForEachCommitPatch(repo, func(commit git.CommitPatch) error {
+				findings, err := scanner.ScanPatchForCommit(commit.Patch, loadedRules, ign, commit.Hash)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error during patch scan: %v\n", err)
+					return err
 				}
 				allFindings = append(allFindings, findings...)
+				return nil
+			})
+			if err != nil {
+				slog.Error("history scan failed", "error", err)
+				os.Exit(2)
 			}
 		} else {
 			patchString, err := git.GetHeadPatch(repo)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error getting HEAD patch: %v\n", err)
+				slog.Error("failed to get HEAD patch", "error", err)
 				os.Exit(2)
 			}
 			findings, err := scanner.ScanPatch(patchString, loadedRules, ign)
@@ -106,10 +108,10 @@ func main() {
 			allFindings = append(allFindings, findings...)
 		}
 	} else {
-		fmt.Fprintf(os.Stderr, "✅ [xSentry] Running in stdin mode...\n")
+		slog.Info("scanning standard input")
 		lines, readErr := io.ReadAll(os.Stdin)
 		if readErr != nil {
-			fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error reading from stdin: %v\n", readErr)
+			slog.Error("failed to read standard input", "error", readErr)
 			os.Exit(2)
 		}
 
@@ -124,18 +126,19 @@ func main() {
 	}
 
 	if scanErr != nil {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error during scan: %v\n", scanErr)
+		slog.Error("scan failed", "error", scanErr)
 		os.Exit(2)
 	}
 
 	if err := reporter.ReportFindings(allFindings, *reportURL); err != nil {
-		fmt.Fprintf(os.Stderr, "🚨 [xSentry] Error sending report: %v\n", err)
+		slog.Error("failed to report findings", "error", err)
+		os.Exit(2)
 	}
 
 	if len(allFindings) > 0 {
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "✅ [xSentry] No secrets found.\n")
+	slog.Info("scan completed with no findings")
 	os.Exit(0)
 }

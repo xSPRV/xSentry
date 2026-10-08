@@ -24,9 +24,9 @@ xSentry can be installed via pre-compiled binary, Docker, or by building from so
 
 Perfect for Python, C#, or Node.js developers who don't have Go installed.
 
-1.  Go to the Releases page.
-2.  Download the archive for your OS (Windows, macOS, or Linux).
-3.  Extract the `xSentry` (or `xSentry.exe`) binary to your project root.
+1. Go to the Releases page.
+2. Download the archive for your OS (Windows, macOS, or Linux).
+3. Extract the `xSentry` (or `xSentry.exe`) binary to your project root.
 
 ### Option 2: Docker (Recommended for CI/CD)
 
@@ -39,7 +39,7 @@ docker run -v $(pwd):/src ghcr.io/xSPRV/xsentry -path=/src --scan-history
 
 ### Option 3: Build from Source (For Go Developers)
 
-If you have Go 1.21+ installed:
+If you have Go 1.27+ installed:
 
 ```bash
 git clone [https://github.com/xSPRV/xSentry.git](https://github.com/xSPRV/xSentry.git)
@@ -53,19 +53,19 @@ go build -o xSentry ./cmd/xSentry
 
 ### Basic Scans
 
-### Scan the current directory (HEAD commit):
+### Scan the current directory (HEAD commit)
 
 ```bash
 ./xSentry -path="."
 ```
 
-### Scan the entire commit history:
+### Scan the entire commit history
 
 ```bash
 ./xSentry -path="." --scan-history
 ```
 
-### Scan a specific file or string (via stdin):
+### Scan a specific file or string (via stdin)
 
 ```bash
 echo "my-secret-key" | ./xSentry

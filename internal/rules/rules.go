@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 
 	"github.com/BurntSushi/toml"
@@ -16,7 +17,8 @@ type Rule struct {
 	Regex    string   `toml:"regex"`
 	Keywords []string `toml:"keywords"`
 
-	Entropy float64 `toml:"entropy,omitempty"`
+	Entropy     float64 `toml:"entropy,omitempty"`
+	SecretGroup int     `toml:"secret_group,omitempty"`
 
 	CompiledRegex *regexp.Regexp `toml:"-"`
 }
@@ -31,13 +33,17 @@ func LoadRules(filePath string) ([]Rule, error) {
 	var compiledRules []Rule
 	for _, r := range config.Rules {
 		if r.Regex == "" {
-			fmt.Printf("Warning: Skipping rule '%s', regex is empty.\n", r.Name)
+			slog.Warn("skipping rule with empty regex", "rule", r.Name)
 			continue
 		}
 
 		compiled, err := regexp.Compile(r.Regex)
 		if err != nil {
-			fmt.Printf("Warning: Skipping rule '%s', failed to compile regex: %v\n", r.Name, err)
+			slog.Warn("skipping rule with invalid regex", "rule", r.Name, "error", err)
+			continue
+		}
+		if r.SecretGroup < 0 || r.SecretGroup > compiled.NumSubexp() {
+			slog.Warn("skipping rule with invalid secret_group", "rule", r.Name, "secret_group", r.SecretGroup, "capture_groups", compiled.NumSubexp())
 			continue
 		}
 		r.CompiledRegex = compiled
