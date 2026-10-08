@@ -80,6 +80,7 @@ cat config.yaml | ./xSentry
 | `-path`         | Path to the Git repository to scan.            | `""` (stdin mode)    |
 | `-scan-history` | Scan every commit in the repo's history.       | `false`              |
 | `-report-url`   | URL to POST JSON findings to (for dashboards). | `""`                 |
+| `-color`        | Color output: `auto`, `always`, or `never`.    | `auto`               |
 | `-rules`        | Path to the TOML rules configuration file.     | `rules.example.toml` |
 | `-ignore`       | Path to the ignore file.                       | `.xSentry-ignore`    |
 | `-install-hook` | Install the pre-commit hook to `.git/hooks`.   | `false`              |

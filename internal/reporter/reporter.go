@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/Dokuqui/xSentry/internal/console"
 	"github.com/Dokuqui/xSentry/internal/scanner"
 )
 
@@ -16,10 +15,11 @@ func ReportFindings(findings []scanner.Finding, reportUrl string) error {
 	printToConsole(findings)
 
 	if reportUrl != "" && len(findings) > 0 {
-		slog.Info("sending findings report")
+		console.Progress("Sending findings report")
 		if err := sendToURL(findings, reportUrl); err != nil {
 			return fmt.Errorf("failed to send JSON report: %w", err)
 		}
+		console.Success("Findings report sent")
 	}
 	return nil
 }
@@ -29,18 +29,16 @@ func printToConsole(findings []scanner.Finding) {
 		return
 	}
 
-	fmt.Fprintln(os.Stderr, "\n--- SECRETS FOUND ---")
+	console.Warning(fmt.Sprintf("%d potential secret finding(s)", len(findings)))
 	for _, f := range findings {
-		fmt.Fprintln(os.Stderr, "Finding:")
-		fmt.Fprintf(os.Stderr, "    File:   %s\n", f.File)
-		fmt.Fprintf(os.Stderr, "    Line:   %d\n", f.Line)
-		fmt.Fprintf(os.Stderr, "    Rule:   %s\n", f.Details)
+		console.Error("Potential secret")
+		console.Detail("File", f.File)
+		console.Detail("Line", fmt.Sprint(f.Line))
+		console.Detail("Rule", f.Details)
 		if f.Commit != "" {
-			fmt.Fprintf(os.Stderr, "    Commit: %s\n", f.Commit)
+			console.Detail("Commit", f.Commit)
 		}
-		fmt.Fprintln(os.Stderr)
 	}
-	fmt.Fprintln(os.Stderr, "---------------------")
 }
 
 func sendToURL(findings []scanner.Finding, url string) error {

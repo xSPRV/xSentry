@@ -2,10 +2,10 @@ package rules
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 
 	"github.com/BurntSushi/toml"
+	"github.com/Dokuqui/xSentry/internal/console"
 )
 
 type Config struct {
@@ -33,17 +33,17 @@ func LoadRules(filePath string) ([]Rule, error) {
 	var compiledRules []Rule
 	for _, r := range config.Rules {
 		if r.Regex == "" {
-			slog.Warn("skipping rule with empty regex", "rule", r.Name)
+			console.Warning(fmt.Sprintf("Skipping rule %q: regex is empty", r.Name))
 			continue
 		}
 
 		compiled, err := regexp.Compile(r.Regex)
 		if err != nil {
-			slog.Warn("skipping rule with invalid regex", "rule", r.Name, "error", err)
+			console.Warning(fmt.Sprintf("Skipping rule %q: invalid regex: %v", r.Name, err))
 			continue
 		}
 		if r.SecretGroup < 0 || r.SecretGroup > compiled.NumSubexp() {
-			slog.Warn("skipping rule with invalid secret_group", "rule", r.Name, "secret_group", r.SecretGroup, "capture_groups", compiled.NumSubexp())
+			console.Warning(fmt.Sprintf("Skipping rule %q: secret_group %d is outside 0..%d", r.Name, r.SecretGroup, compiled.NumSubexp()))
 			continue
 		}
 		r.CompiledRegex = compiled

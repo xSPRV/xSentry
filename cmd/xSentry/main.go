@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
-	"log/slog"
 	"os"
+	"time"
 
+	"github.com/Dokuqui/xSentry/internal/console"
 	"github.com/Dokuqui/xSentry/internal/git"
 	"github.com/Dokuqui/xSentry/internal/ignore"
 	"github.com/Dokuqui/xSentry/internal/reporter"
@@ -17,8 +19,6 @@ const defaultRulesFile = "rules.example.toml"
 const defaultIgnoreFile = ".xSentry-ignore"
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
-
 	rulesPath := flag.String("rules", defaultRulesFile, "Path to the rules file")
 	ignorePath := flag.String("ignore", defaultIgnoreFile, "Path to the ignore file")
 	repoPath := flag.String("path", "", "Path to a Git repository to scan")
@@ -26,43 +26,51 @@ func main() {
 	installHook := flag.Bool("install-hook", false, "Install the xSentry pre-commit hook")
 	scanStaged := flag.Bool("scan-staged", false, "Run in pre-commit hook mode (scans staged files)")
 	reportURL := flag.String("report-url", "", "URL to POST JSON findings to")
+	colorMode := flag.String("color", "auto", "Color output: auto, always, or never")
 	flag.Parse()
+	if err := console.Configure(*colorMode); err != nil {
+		console.Error(err.Error())
+		os.Exit(2)
+	}
+	console.Info("xSentry")
 
 	if *installHook {
 		err := installPreCommitHook()
 		if err != nil {
-			slog.Error("failed to install pre-commit hook", "error", err)
+			console.Error("Failed to install pre-commit hook: " + err.Error())
 			os.Exit(1)
 		}
-		slog.Info("pre-commit hook installed successfully")
+		console.Success("Pre-commit hook installed")
 		os.Exit(0)
 	}
 
 	loadedRules, err := rules.LoadRules(*rulesPath)
 	if err != nil {
-		slog.Error("failed to load rules file", "path", *rulesPath, "error", err)
+		console.Error(fmt.Sprintf("Could not load rules file %q: %v", *rulesPath, err))
 		os.Exit(2)
 	}
 	if len(loadedRules) == 0 {
-		slog.Error("no valid rules loaded")
+		console.Error("No valid rules were loaded")
 		os.Exit(2)
 	}
-	slog.Info("rules loaded", "count", len(loadedRules), "path", *rulesPath)
+	console.Success(fmt.Sprintf("Rules loaded: %d", len(loadedRules)))
+	console.Detail("File", *rulesPath)
 
 	ign, err := ignore.NewIgnorer(*ignorePath)
 	if err != nil {
-		slog.Error("failed to load ignore file", "path", *ignorePath, "error", err)
+		console.Error(fmt.Sprintf("Could not load ignore file %q: %v", *ignorePath, err))
 		os.Exit(2)
 	}
 
+	scanStarted := time.Now()
 	var allFindings []scanner.Finding
 	var scanErr error
 
 	if *scanStaged {
-		slog.Info("scanning staged changes")
+		console.Progress("Scanning staged changes")
 		patchString, err := git.GetStagedPatch()
 		if err != nil {
-			slog.Error("failed to get staged changes", "error", err)
+			console.Error("Could not read staged changes: " + err.Error())
 			os.Exit(2)
 		}
 		if patchString != "" {
@@ -74,16 +82,32 @@ func main() {
 		}
 
 	} else if *repoPath != "" {
-		slog.Info("opening Git repository", "path", *repoPath)
+		console.Progress("Opening Git repository")
+		console.Detail("Path", *repoPath)
 		repo, err := git.OpenRepository(*repoPath)
 		if err != nil {
-			slog.Error("failed to open Git repository", "error", err)
+			console.Error("Could not open Git repository: " + err.Error())
 			os.Exit(2)
 		}
 
 		if *scanHistory {
-			slog.Info("scanning commit history")
-			err := git.ForEachCommitPatch(repo, func(commit git.CommitPatch) error {
+			shallow, err := git.IsShallowRepository(repo)
+			if err != nil {
+				console.Error("Could not inspect repository history: " + err.Error())
+				os.Exit(2)
+			}
+			if shallow {
+				console.Error("Full history is unavailable in this shallow checkout")
+				console.Detail("Fix", "fetch the repository with fetch-depth: 0, then rerun the scan")
+				os.Exit(2)
+			}
+			console.Progress("Scanning full Git history")
+			commitCount := 0
+			err = git.ForEachCommitPatch(repo, func(commit git.CommitPatch) error {
+				commitCount++
+				if commitCount%100 == 0 {
+					console.Progress(fmt.Sprintf("Scanned %d commits", commitCount))
+				}
 				findings, err := scanner.ScanPatchForCommit(commit.Patch, loadedRules, ign, commit.Hash)
 				if err != nil {
 					return err
@@ -92,13 +116,14 @@ func main() {
 				return nil
 			})
 			if err != nil {
-				slog.Error("history scan failed", "error", err)
+				console.Error("History scan failed: " + err.Error())
 				os.Exit(2)
 			}
+			console.Success(fmt.Sprintf("History scanned: %d commits in %s", commitCount, time.Since(scanStarted).Round(time.Millisecond)))
 		} else {
 			patchString, err := git.GetHeadPatch(repo)
 			if err != nil {
-				slog.Error("failed to get HEAD patch", "error", err)
+				console.Error("Could not read HEAD patch: " + err.Error())
 				os.Exit(2)
 			}
 			findings, err := scanner.ScanPatch(patchString, loadedRules, ign)
@@ -108,10 +133,10 @@ func main() {
 			allFindings = append(allFindings, findings...)
 		}
 	} else {
-		slog.Info("scanning standard input")
+		console.Progress("Scanning standard input")
 		lines, readErr := io.ReadAll(os.Stdin)
 		if readErr != nil {
-			slog.Error("failed to read standard input", "error", readErr)
+			console.Error("Could not read standard input: " + readErr.Error())
 			os.Exit(2)
 		}
 
@@ -126,19 +151,20 @@ func main() {
 	}
 
 	if scanErr != nil {
-		slog.Error("scan failed", "error", scanErr)
+		console.Error("Scan failed: " + scanErr.Error())
 		os.Exit(2)
 	}
 
 	if err := reporter.ReportFindings(allFindings, *reportURL); err != nil {
-		slog.Error("failed to report findings", "error", err)
+		console.Error("Could not report findings: " + err.Error())
 		os.Exit(2)
 	}
 
 	if len(allFindings) > 0 {
+		console.Warning(fmt.Sprintf("Scan complete: %d finding(s) in %s", len(allFindings), time.Since(scanStarted).Round(time.Millisecond)))
 		os.Exit(1)
 	}
 
-	slog.Info("scan completed with no findings")
+	console.Success(fmt.Sprintf("Scan complete: no findings in %s", time.Since(scanStarted).Round(time.Millisecond)))
 	os.Exit(0)
 }

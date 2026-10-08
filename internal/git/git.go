@@ -17,6 +17,14 @@ func OpenRepository(path string) (*git.Repository, error) {
 	return repo, nil
 }
 
+func IsShallowRepository(repo *git.Repository) (bool, error) {
+	shallowCommits, err := repo.Storer.Shallow()
+	if err != nil {
+		return false, fmt.Errorf("failed to read shallow repository metadata: %w", err)
+	}
+	return len(shallowCommits) > 0, nil
+}
+
 func GetHeadPatch(repo *git.Repository) (string, error) {
 	headRef, err := repo.Head()
 	if err != nil {
@@ -58,7 +66,7 @@ func ForEachCommitPatch(repo *git.Repository, visit func(CommitPatch) error) err
 		return fmt.Errorf("failed to get commit log: %w", err)
 	}
 
-	return cIter.ForEach(func(c *object.Commit) error {
+	err = cIter.ForEach(func(c *object.Commit) error {
 		var parent *object.Commit
 		if c.NumParents() > 0 {
 			parent, err = c.Parent(0)
@@ -76,6 +84,10 @@ func ForEachCommitPatch(repo *git.Repository, visit func(CommitPatch) error) err
 		}
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed while walking commit history: %w", err)
+	}
+	return nil
 }
 
 func GetStagedPatch() (string, error) {
