@@ -24,11 +24,9 @@ jobs:
       - name: Build
         run: go build -v ./cmd/xSentry
 
-      #      - name: Test
-      #        run: go test ./...
+      - name: Test
+        run: go test ./...
 
-      # 5. Run a linter (Good Practice)
-      # You can install golangci-lint here, or just use `go fmt`
       - name: Lint
         run: go fmt ./...
 
