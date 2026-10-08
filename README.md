@@ -1,15 +1,14 @@
 # xSentry
 
-xSentry is a powerful, cross-platform secret scanning tool designed to prevent sensitive data (API keys, passwords,
-tokens) from leaking into your source code. It can run as a local pre-commit hook to block secrets before they are
-committed, or as a CI/CD step to scan your entire repository history.
+xSentry is a cross-platform secret scanner for detecting credentials and other sensitive values in Git changes. It can
+scan staged changes before a commit, changes between two commits in CI, the latest commit, or the full commit history.
 
 ## Features
 
 * **Smart Detection:** Uses a hybrid engine combining Regular Expressions and Shannon Entropy to find both known
   patterns (like AWS keys) and unknown, random secrets.
 * **Pre-Commit Hook:** Installs easily into `.git/hooks` to block secrets before they leave your machine.
-* **Git-Aware:** Can scan the latest commit, the entire history, or just staged files.
+* **Git-Aware:** Scans added lines in staged changes, a commit, a commit range, or commit history.
 * **Cross-Platform:** Works seamlessly on Windows, macOS, and Linux.
 * **Configurable:** Fully customizable rules and ignore lists.
 * **Centralized Reporting:** Can send findings to a central dashboard via JSON/HTTP.
@@ -28,14 +27,17 @@ Perfect for Python, C#, or Node.js developers who don't have Go installed.
 2. Download the archive for your OS (Windows, macOS, or Linux).
 3. Extract the `xSentry` (or `xSentry.exe`) binary to your project root.
 
-### Option 2: Docker (Recommended for CI/CD)
+### Option 2: Docker
 
 Use the official Docker image to run xSentry in any CI pipeline without installing dependencies.
 
 ```bash
 docker pull ghcr.io/xSPRV/xsentry:latest
-docker run -v $(pwd):/src ghcr.io/xSPRV/xsentry -path=/src --scan-history
+docker run --rm -v "$(pwd):/src" ghcr.io/xSPRV/xsentry -path=/src --scan-history
 ```
+
+This scans the mounted repository's full history. For faster CI checks, use `-base` and `-head` to scan only the
+changes in a push or pull request.
 
 ### Option 3: Build from Source (For Go Developers)
 
@@ -51,21 +53,41 @@ go build -o xSentry ./cmd/xSentry
 
 ## Usage
 
-### Basic Scans
+### Scan modes
 
-### Scan the current directory (HEAD commit)
+All Git scan modes inspect added lines in diffs. They do not scan uncommitted, unstaged working-tree changes.
+
+#### Scan changes introduced by the latest commit
 
 ```bash
 ./xSentry -path="."
 ```
 
-### Scan the entire commit history
+#### Scan the entire commit history
 
 ```bash
 ./xSentry -path="." --scan-history
 ```
 
-### Scan a specific file or string (via stdin)
+#### Scan changes between two commits (useful for CI)
+
+This scans lines added since the merge base of `base` and `head`. Fetch both commits before running it.
+
+```bash
+./xSentry -path="." -base="<base-sha>" -head="<head-sha>"
+```
+
+`-head` defaults to `HEAD`. Use `--scan-history` for a complete history scan; it cannot be combined with `-base`.
+
+#### Scan staged changes
+
+This is the mode used by the installed pre-commit hook:
+
+```bash
+./xSentry --scan-staged
+```
+
+#### Scan text from standard input
 
 ```bash
 echo "my-secret-key" | ./xSentry
@@ -75,15 +97,40 @@ cat config.yaml | ./xSentry
 
 ### Command Line Flags
 
-| Flag            | Description                                    | Default              |
-|:----------------|:-----------------------------------------------|:---------------------|
-| `-path`         | Path to the Git repository to scan.            | `""` (stdin mode)    |
-| `-scan-history` | Scan every commit in the repo's history.       | `false`              |
-| `-report-url`   | URL to POST JSON findings to (for dashboards). | `""`                 |
-| `-color`        | Color output: `auto`, `always`, or `never`.    | `auto`               |
-| `-rules`        | Path to the TOML rules configuration file.     | `rules.example.toml` |
-| `-ignore`       | Path to the ignore file.                       | `.xSentry-ignore`    |
-| `-install-hook` | Install the pre-commit hook to `.git/hooks`.   | `false`              |
+| Flag | Description | Default |
+|:--|:--|:--|
+| `-path` | Path to a Git repository. | `""` (read stdin) |
+| `-scan-history` | Scan every commit in repository history. | `false` |
+| `-base` | Base commit/ref for a range scan; requires `-path`. | `""` (disabled) |
+| `-head` | Head commit/ref for a range scan. | `HEAD` |
+| `-scan-staged` | Scan staged changes (used by the pre-commit hook). | `false` |
+| `-install-hook` | Install xSentry's pre-commit hook in this repository. | `false` |
+| `-rules` | Path to the TOML rules file. | `rules.example.toml` |
+| `-ignore` | Path to the rule ignore file. | `.xSentry-ignore` |
+| `-report-url` | POST findings as JSON to this URL. | `""` |
+| `-color` | Color output: `auto`, `always`, or `never`. | `auto` |
+
+`-base` cannot be combined with `--scan-history`. By default, the rules and ignore file paths are relative to the
+current working directory.
+
+### Install the pre-commit hook
+
+Build or place the `xSentry` binary in your repository root, then run:
+
+```bash
+./xSentry -install-hook
+```
+
+The hook scans staged changes and blocks the commit when it finds a possible secret. If a pre-commit hook already
+exists, xSentry leaves it unchanged; add `xSentry --scan-staged` to that hook yourself.
+
+### Exit codes
+
+| Code | Meaning |
+|:--:|:--|
+| `0` | Scan completed with no findings. |
+| `1` | One or more potential secrets were found. |
+| `2` | The scan could not run or report findings. |
 
 ---
 
@@ -120,8 +167,8 @@ that line.
 apiKey := "this-is-public-info-not-a-secret" // xSentry-ignore
 ```
 
-**2. Global Ignore File (.xSentry-ignore):** You can ignore entire rules by adding their name to the .xSentry-ignore
-file.
+**2. Global Ignore File (`.xSentry-ignore`):** Ignore a rule everywhere by adding its exact name to the file. Blank
+lines and lines starting with `#` are ignored.
 
 ```plaintext
 # Ignore the generic key rule globally
@@ -137,7 +184,9 @@ To prevent secrets from being merged, run xSentry as a blocking step in your CI 
 
 ### GitHub Actions
 
-Add this to ``.github/workflows/security.yml``:
+The repository workflow scans only the changes in pushes and pull requests. It scans full history on a manual run or weekly schedule. A range scan needs both commits available, so the checkout uses `fetch-depth: 0`.
+
+For a custom GitHub Actions workflow, pass the pull request base and checked-out commit:
 
 ```yaml
 jobs:
@@ -155,7 +204,10 @@ jobs:
           fetch-depth: 0
 
       - name: Run Scan
-        run: xSentry -path="." --scan-history
+        env:
+          XSENTRY_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          XSENTRY_HEAD_SHA: ${{ github.sha }}
+        run: xSentry -path="." -base="$XSENTRY_BASE_SHA" -head="$XSENTRY_HEAD_SHA"
 ```
 
 ### GitLab CI
@@ -198,11 +250,12 @@ steps:
 
 ### Reporting to Dashboard
 
-If you use a central security dashboard, use the -report-url flag to send findings as JSON.
+If you use a central security dashboard, use `-report-url` to POST findings as JSON. xSentry sends a report only when
+it finds something; the payload contains a `count` and a `findings` array.
 
 ```bash
-./xSentry -path="." --scan-history
---report-url="https://dashboard.internal/api/webhooks/xsentry"
+./xSentry -path="." --scan-history \
+  -report-url="https://dashboard.internal/api/webhooks/xsentry"
 ```
 
 ---

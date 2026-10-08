@@ -23,6 +23,8 @@ func main() {
 	ignorePath := flag.String("ignore", defaultIgnoreFile, "Path to the ignore file")
 	repoPath := flag.String("path", "", "Path to a Git repository to scan")
 	scanHistory := flag.Bool("scan-history", false, "Scan all commits in history")
+	baseRef := flag.String("base", "", "Base commit/ref for scanning changed lines (requires -path)")
+	headRef := flag.String("head", "HEAD", "Head commit/ref for scanning changed lines")
 	installHook := flag.Bool("install-hook", false, "Install the xSentry pre-commit hook")
 	scanStaged := flag.Bool("scan-staged", false, "Run in pre-commit hook mode (scans staged files)")
 	reportURL := flag.String("report-url", "", "URL to POST JSON findings to")
@@ -30,6 +32,14 @@ func main() {
 	flag.Parse()
 	if err := console.Configure(*colorMode); err != nil {
 		console.Error(err.Error())
+		os.Exit(2)
+	}
+	if *scanHistory && *baseRef != "" {
+		console.Error("-base cannot be used with --scan-history")
+		os.Exit(2)
+	}
+	if *baseRef != "" && *repoPath == "" {
+		console.Error("-base requires -path to a Git repository")
 		os.Exit(2)
 	}
 	console.Info("xSentry")
@@ -120,6 +130,18 @@ func main() {
 				os.Exit(2)
 			}
 			console.Success(fmt.Sprintf("History scanned: %d commits in %s", commitCount, time.Since(scanStarted).Round(time.Millisecond)))
+		} else if *baseRef != "" {
+			console.Progress(fmt.Sprintf("Scanning changes from %s to %s", *baseRef, *headRef))
+			patchString, err := git.GetRangePatch(*repoPath, *baseRef, *headRef)
+			if err != nil {
+				console.Error("Could not read commit range: " + err.Error())
+				os.Exit(2)
+			}
+			findings, err := scanner.ScanPatch(patchString, loadedRules, ign)
+			if err != nil {
+				scanErr = err
+			}
+			allFindings = append(allFindings, findings...)
 		} else {
 			patchString, err := git.GetHeadPatch(repo)
 			if err != nil {

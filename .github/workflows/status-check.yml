@@ -1,6 +1,11 @@
 name: xSentry CI
 
-on: [ push, pull_request ]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
 
 jobs:
   test-and-scan:
@@ -28,4 +33,15 @@ jobs:
         run: go fmt ./...
 
       - name: Scan with xSentry
-        run: ./xSentry -path="." --scan-history
+        env:
+          XSENTRY_EVENT_NAME: ${{ github.event_name }}
+          XSENTRY_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          XSENTRY_HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [ "$XSENTRY_EVENT_NAME" = "schedule" ] || [ "$XSENTRY_EVENT_NAME" = "workflow_dispatch" ]; then
+            ./xSentry -path="." --scan-history
+          elif [ -z "$XSENTRY_BASE_SHA" ] || [ "$XSENTRY_BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            ./xSentry -path="." --scan-history
+          else
+            ./xSentry -path="." -base="$XSENTRY_BASE_SHA" -head="$XSENTRY_HEAD_SHA"
+          fi
