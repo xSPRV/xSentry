@@ -176,6 +176,14 @@ lines and lines starting with `#` are ignored.
 Generic API Key
 ```
 
+For a confirmed false positive in a historical commit, `.xSentry-ignore` also supports an exact finding exception.
+Include the full commit hash, repository-relative path, line, rule name, and a short reason. This exception applies
+only to that finding in full-history scans; it does not suppress the same rule in later commits or range scans.
+
+```text
+finding|<commit-sha>|path/to/file|42|Rule Name|Reason this historical finding is safe to ignore.
+```
+
 ---
 
 ## 🔄 CI/CD Integration

@@ -1,1 +1,18 @@
 Generic API Key (Len ≥ 16)
+
+# Historical synthetic scanner fixtures from these commits; the source was later
+# changed to assemble these values at runtime. Format: finding|commit|file|line|rule|reason
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|22|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|47|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|82|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|91|Base64-Encoded 32-byte Key|Synthetic test name; no credential was exposed.
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|93|Base64-Encoded 32-byte Key|Synthetic checksum fixture; no credential was exposed.
+finding|34dcc0b8cf40c991701856a3f565e613227f69c4|internal/scanner/scanner_test.go|121|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|22|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|47|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|82|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|91|Base64-Encoded 32-byte Key|Synthetic test name; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|93|Base64-Encoded 32-byte Key|Synthetic checksum fixture; no credential was exposed.
+finding|4b43cbc727ff1b1940bb68f8b0ab80b3766010d9|internal/scanner/scanner_test.go|121|AWS Access Key ID|Synthetic scanner fixture; no credential was exposed.
+finding|cb3ae61e3106ba6ee681ddbbd93679e935bf03e6|internal/scanner/rule_corpus_test.go|31|Hardcoded Password|Synthetic rule-corpus fixture; no credential was exposed.
+finding|cb3ae61e3106ba6ee681ddbbd93679e935bf03e6|internal/scanner/rule_corpus_test.go|54|Terraform Variable Secret|Synthetic rule-corpus fixture; no credential was exposed.

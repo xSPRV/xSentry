@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -131,6 +132,57 @@ func TestScanPatchForCommitIncludesCommitHash(t *testing.T) {
 	}
 }
 
+func TestHistoricalFindingAllowlistIsExact(t *testing.T) {
+	loadedRules := loadExampleRules(t)
+	ignorer := loadRepoIgnorer(t)
+	allowedCommits := []string{
+		"34dcc0b8cf40c991701856a3f565e613227f69c4",
+		"4b43cbc727ff1b1940bb68f8b0ab80b3766010d9",
+	}
+	cases := []struct {
+		line int
+		text string
+		rule string
+	}{
+		{22, awsKeySourceLine(""), "AWS Access Key ID"},
+		{47, awsKeySourceLine(""), "AWS Access Key ID"},
+		{82, awsKeySourceLine(""), "AWS Access Key ID"},
+		{91, joinParts("func ", "TestScanPatchExcludesGoSumFrom", "Base64KeyRule(t *testing.T) {"), "Base64-Encoded 32-byte Key"},
+		{93, `checksum := "` + highEntropyBase64Sample() + `="`, "Base64-Encoded 32-byte Key"},
+		{121, awsKeySourceLine(""), "AWS Access Key ID"},
+	}
+
+	for _, testCase := range cases {
+		patch := addedLinePatchAt("internal/scanner/scanner_test.go", testCase.line, testCase.text)
+
+		for _, allowedCommit := range allowedCommits {
+			allowedFindings, err := ScanPatchForCommit(patch, loadedRules, ignorer, allowedCommit)
+			if err != nil {
+				t.Fatalf("ScanPatchForCommit(allowed commit, line %d) error = %v", testCase.line, err)
+			}
+			if hasFindingForRule(allowedFindings, testCase.rule) {
+				t.Errorf("allowlisted finding at line %d was reported for commit %s: %#v", testCase.line, allowedCommit, allowedFindings)
+			}
+		}
+
+		otherCommitFindings, err := ScanPatchForCommit(patch, loadedRules, ignorer, "different-commit")
+		if err != nil {
+			t.Fatalf("ScanPatchForCommit(other commit, line %d) error = %v", testCase.line, err)
+		}
+		if !hasFindingForRule(otherCommitFindings, testCase.rule) {
+			t.Errorf("finding at line %d was suppressed for a different commit", testCase.line)
+		}
+
+		currentScanFindings, err := ScanPatch(patch, loadedRules, ignorer)
+		if err != nil {
+			t.Fatalf("ScanPatch(line %d) error = %v", testCase.line, err)
+		}
+		if !hasFindingForRule(currentScanFindings, testCase.rule) {
+			t.Errorf("finding at line %d was suppressed without a commit hash", testCase.line)
+		}
+	}
+}
+
 func loadExampleRules(t *testing.T) []rules.Rule {
 	t.Helper()
 	_, sourceFile, _, ok := runtime.Caller(0)
@@ -154,11 +206,33 @@ func emptyIgnorer(t *testing.T) *ignore.Ignorer {
 	return ignorer
 }
 
+func loadRepoIgnorer(t *testing.T) *ignore.Ignorer {
+	t.Helper()
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller() could not locate scanner_test.go")
+	}
+	ignorePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", ".xSentry-ignore")
+	ignorer, err := ignore.NewIgnorer(ignorePath)
+	if err != nil {
+		t.Fatalf("NewIgnorer(%q) error = %v", ignorePath, err)
+	}
+	return ignorer
+}
+
 func addedLinePatch(path, line string) string {
 	return "diff --git a/" + path + " b/" + path + "\n" +
 		"--- a/" + path + "\n" +
 		"+++ b/" + path + "\n" +
 		"@@ -0,0 +1 @@\n+" + line + "\n"
+}
+
+func addedLinePatchAt(path string, lineNumber int, line string) string {
+	return "diff --git a/" + path + " b/" + path + "\n" +
+		"--- a/" + path + "\n" +
+		"+++ b/" + path + "\n" +
+		fmt.Sprintf("@@ -0,0 +%d @@\n", lineNumber) +
+		"+" + line + "\n"
 }
 
 func awsKeySourceLine(suffix string) string {
