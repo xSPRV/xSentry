@@ -222,6 +222,7 @@ exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rule
 name = "Terraform Variable Secret"
 regex = '''(?i)(variable).*(".*(secret|password|token).*)'''
 keywords = ["variable"]
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 [[rules]]
 name = "Kubernetes Secret YAML"
