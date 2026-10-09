@@ -105,13 +105,17 @@ cat config.yaml | ./xSentry
 | `-head` | Head commit/ref for a range scan. | `HEAD` |
 | `-scan-staged` | Scan staged changes (used by the pre-commit hook). | `false` |
 | `-install-hook` | Install xSentry's pre-commit hook in this repository. | `false` |
-| `-rules` | Path to the TOML rules file. | `rules.example.toml` |
+| `-rules` | Path to a custom TOML rules file. | Built-in rules |
 | `-ignore` | Path to the rule ignore file. | `.xSentry-ignore` |
 | `-report-url` | POST findings as JSON to this URL. | `""` |
 | `-color` | Color output: `auto`, `always`, or `never`. | `auto` |
 
-`-base` cannot be combined with `--scan-history`. By default, the rules and ignore file paths are relative to the
-current working directory.
+`-base` cannot be combined with `--scan-history`. The ignore file path and any path supplied with `-rules` are
+relative to the current working directory by default.
+
+xSentry includes its default rule set in the binary, so it can run from any working directory without a local
+`rules.example.toml`. Pass `-rules="rules.example.toml"` to load that file explicitly, or provide another TOML file
+to customize detection.
 
 ### Install the pre-commit hook
 
@@ -136,9 +140,10 @@ exists, xSentry leaves it unchanged; add `xSentry --scan-staged` to that hook yo
 
 ## ⚙️ Configuration
 
-### Rules (rules.example.toml)
+### Rules
 
-xSentry uses a TOML file to define detection rules. You can define simple regex rules or hybrid "Regex + Entropy" rules.
+xSentry uses its built-in TOML rule set by default. To customize rules, pass a TOML file with `-rules`; the root-level
+`rules.example.toml` is an editable example. You can define simple regex rules or hybrid "Regex + Entropy" rules.
 Rules can also exclude file paths from that specific detector with `exclude_paths`. Each entry is a regular expression
 matched against the repository-relative path, with path separators normalized to `/`.
 
