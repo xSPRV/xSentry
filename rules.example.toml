@@ -146,25 +146,25 @@ keywords = ["redis://"]
 name = "RSA Private Key"
 regex = '''(?i)-----BEGIN RSA PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
-exclude_paths = ['(^|/)rules\.example\.toml$']
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 [[rules]]
 name = "OpenSSH Private Key"
 regex = '''(?i)-----BEGIN OPENSSH PRIVATE KEY-----'''
 keywords = ["OPENSSH"]
-exclude_paths = ['(^|/)rules\.example\.toml$']
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 [[rules]]
 name = "DSA Private Key"
 regex = '''(?i)-----BEGIN DSA PRIVATE KEY-----'''
 keywords = ["DSA"]
-exclude_paths = ['(^|/)rules\.example\.toml$']
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 [[rules]]
 name = "EC Private Key"
 regex = '''(?i)-----BEGIN EC PRIVATE KEY-----'''
 keywords = ["EC PRIVATE KEY"]
-exclude_paths = ['(^|/)rules\.example\.toml$']
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 ###################################################
 # Generic Tokens & Secrets
@@ -213,7 +213,7 @@ exclude_paths = ['(^|/)go\.sum$']
 name = "PKCS8 Private Key"
 regex = '''(?i)-----BEGIN PRIVATE KEY-----'''
 keywords = ["PRIVATE"]
-exclude_paths = ['(^|/)rules\.example\.toml$']
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 ###################################################
 # Terraform / Kubernetes / CI/CD Secrets
@@ -222,6 +222,7 @@ exclude_paths = ['(^|/)rules\.example\.toml$']
 name = "Terraform Variable Secret"
 regex = '''(?i)(variable).*(".*(secret|password|token).*)'''
 keywords = ["variable"]
+exclude_paths = ['(^|/)rules\.example\.toml$', '(^|/)internal/rules/default_rules\.toml$']
 
 [[rules]]
 name = "Kubernetes Secret YAML"
