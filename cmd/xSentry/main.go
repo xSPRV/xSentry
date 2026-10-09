@@ -15,11 +15,10 @@ import (
 	"github.com/Dokuqui/xSentry/internal/scanner"
 )
 
-const defaultRulesFile = "rules.example.toml"
 const defaultIgnoreFile = ".xSentry-ignore"
 
 func main() {
-	rulesPath := flag.String("rules", defaultRulesFile, "Path to the rules file")
+	rulesPath := flag.String("rules", "", "Path to a custom rules file (uses built-in rules when omitted)")
 	ignorePath := flag.String("ignore", defaultIgnoreFile, "Path to the ignore file")
 	repoPath := flag.String("path", "", "Path to a Git repository to scan")
 	scanHistory := flag.Bool("scan-history", false, "Scan all commits in history")
@@ -54,9 +53,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	loadedRules, err := rules.LoadRules(*rulesPath)
+	var loadedRules []rules.Rule
+	var err error
+	if *rulesPath == "" {
+		loadedRules, err = rules.LoadDefaultRules()
+	} else {
+		loadedRules, err = rules.LoadRules(*rulesPath)
+	}
 	if err != nil {
-		console.Error(fmt.Sprintf("Could not load rules file %q: %v", *rulesPath, err))
+		if *rulesPath == "" {
+			console.Error(fmt.Sprintf("Could not load built-in rules: %v", err))
+		} else {
+			console.Error(fmt.Sprintf("Could not load rules file %q: %v", *rulesPath, err))
+		}
 		os.Exit(2)
 	}
 	if len(loadedRules) == 0 {
@@ -64,7 +73,11 @@ func main() {
 		os.Exit(2)
 	}
 	console.Success(fmt.Sprintf("Rules loaded: %d", len(loadedRules)))
-	console.Detail("File", *rulesPath)
+	if *rulesPath == "" {
+		console.Detail("Source", "built-in rules")
+	} else {
+		console.Detail("File", *rulesPath)
+	}
 
 	ign, err := ignore.NewIgnorer(*ignorePath)
 	if err != nil {

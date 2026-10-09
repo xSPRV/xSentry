@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -27,9 +28,18 @@ type Rule struct {
 }
 
 func LoadRules(filePath string) ([]Rule, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rules file %q: %w", filePath, err)
+	}
+
+	return loadRules(data)
+}
+
+func loadRules(data []byte) ([]Rule, error) {
 	var config Config
 
-	if _, err := toml.DecodeFile(filePath, &config); err != nil {
+	if _, err := toml.Decode(string(data), &config); err != nil {
 		return nil, fmt.Errorf("failed to decode rules file: %w", err)
 	}
 
